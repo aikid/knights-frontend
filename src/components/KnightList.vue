@@ -150,12 +150,14 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import { getKnights, createKnight, updateKnight, deleteKnight, type Knight, getHeroKnights } from '../services/knightService';
+import { useToast } from "vue-toastification";
 import "./KnightList.css";
 
 export default defineComponent({
   name: 'KnightTable',
   data() {
     return {
+      toast: useToast(),
       knights: [] as Knight[],
       newKnight: {
         name: '',
@@ -211,7 +213,7 @@ export default defineComponent({
         this.resetForm();
         await this.fetchKnights();
       } catch (error) {
-        alert('Erro ao adicionar cavaleiro');
+        this.toast.success('Erro ao adicionar cavaleiro');
         console.error("Erro ao adicionar cavaleiro:", error);
       }
     },
@@ -258,7 +260,7 @@ export default defineComponent({
             this.knights[index].nickname = updatedKnight.nickname;
           }
         } catch (error) {
-          alert('Erro ao editar nickname');
+          this.toast.error('Erro ao editar nickname');
           console.error('Erro ao editar nickname:', error);
         }
       }
@@ -269,16 +271,16 @@ export default defineComponent({
           const index = this.knights.findIndex((knight) => knight.id === id);
 
           if (index !== -1 && this.knights[index].isHero) {
-            alert('Esse cavaleiro ja foi promovido ao Hall dos Heróis');
+            this.toast.error('Esse cavaleiro ja foi promovido ao Hall dos Heróis');
           }
 
           await deleteKnight(id);
-          
+          this.toast.success('Cavaleiro promovido ao Hall dos Heróis');
           if (index !== -1) {
             this.knights[index].isHero = true;
           }
         } catch (error) {
-          alert('Erro ao promover cavaleiro');
+          this.toast.error('Erro ao promover cavaleiro');
           console.error('Erro ao deletar cavaleiro:', error);
         }
       }
@@ -319,7 +321,7 @@ export default defineComponent({
     },
     initiateBattle(knight: Knight) {
       if(this.calculateAge(knight.birthday.toString()) < 18){
-        alert('Você não pode colocar menores de idade para lutar :(');
+        this.toast.error('Você não pode colocar menores de idade para lutar :(');
         return;
       }
       if (this.battleState.isBattling) {
@@ -340,7 +342,7 @@ export default defineComponent({
       const { knight1, knight2 } = this.battleState;
 
       if (!knight1 || !knight2) {
-        alert("Selecione dois cavaleiros para a batalha!");
+        this.toast.warning("Selecione dois cavaleiros para a batalha!");
         return;
       }
 
@@ -348,13 +350,13 @@ export default defineComponent({
       const attack2 = this.calculateAttack(knight2);
 
       if (attack1 > attack2) {
-        alert(`${knight1.name} venceu a batalha contra ${knight2.name}!`);
+        this.toast.success(`${knight1.name} venceu a batalha contra ${knight2.name}!`);
         await this.removeKnight(knight2.id);
       } else if (attack2 > attack1) {
-        alert(`${knight2.name} venceu a batalha contra ${knight1.name}!`);
+        this.toast.success(`${knight2.name} venceu a batalha contra ${knight1.name}!`);
         await this.removeKnight(knight1.id);
       } else {
-        alert("A batalha terminou em empate!");
+        this.toast.success("A batalha terminou em empate!");
       }
 
       this.cancelBattle();
