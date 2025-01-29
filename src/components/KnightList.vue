@@ -12,6 +12,10 @@
       {{ isShowingHeroes ? "Mostrar Todos" : "Mostrar Heróis" }}
     </button>
 
+    <button class="knightAddBtn" @click="toggleForm">
+      {{ isFormVisible ? "Cancelar Registro" : "Adicionar Cavaleiro" }}
+    </button>
+
     <table>
       <thead>
         <tr>
@@ -36,72 +40,110 @@
             <td>{{ calculateAttack(knight) }}</td>
             <td>{{ calculateExp(calculateAge(knight.birthday)) }}</td>
             <td>{{ knight.isHero ? "Sim" : "Não" }}</td>
-            <td>
-              <button class="editBtn" @click="editNickname(knight.id)">Editar Nickname</button>
-              <button class="deleteBtn" @click="removeKnight(knight.id)">Deletar(Promover)</button>
+            <td class="tableActions">
+              <button class="detailsBtn" @click="showDetails(knight)">Detalhes</button>
+              <button class="editBtn" @click="editNickname(knight.id)">Editar</button>
+              <button class="deleteBtn" @click="removeKnight(knight.id)">Promover</button>
+              <button class="battleBtn" @click="initiateBattle(knight)" v-if="!knight.isHero">Batalhar</button>
             </td>
           </tr>
         </tbody>
       </table>
 
-      <h3 class="titleAdd">Deseja inscrever um novo mebro na taverna?</h3>
-      <!-- Formulário para adicionar cavaleiros -->
-      <form @submit.prevent="addKnight" class="formAdd">
-        <div>
-          <label for="name">Nome:</label>
-          <input id="name" v-model="newKnight.name" placeholder="Nome" required />
-        </div>
-        <div>
-          <label for="nickname">Apelido:</label>
-          <input id="nickname" v-model="newKnight.nickname" placeholder="Apelido" required />
-        </div>
-        <div>
-          <label for="birthday">Data de Nascimento:</label>
-          <input id="birthday" v-model="newKnight.birthday" type="date" required />
-        </div>
-        <div>
-          <label for="keyAttribute">Atributo Chave:</label>
-          <select id="keyAttribute" v-model="newKnight.keyAttribute" required>
-            <option value="Strength">Strength</option>
-            <option value="Dexterity">Dexterity</option>
-            <option value="Intelligence">Intelligence</option>
-            <option value="Constitution">Constitution</option>
-            <option value="Wisdom">Wisdom</option>
-            <option value="Charisma">Charisma</option>
-          </select>
-        </div>
+      <!-- Exibir batalha -->
+      <div v-if="battleState.isBattling" class="battleContainer">
+        <h3>Batalha em Progresso</h3>
+        <p>
+          <b>{{ battleState?.knight1?.name ?? 'Selecione um Cavaleiro' }}</b> está enfrentando
+          <b>{{ battleState?.knight2?.name ?? 'Selecione um Cavaleiro' }}</b>!
+        </p>
+        <button @click="resolveBattle" class="heroesBtn">Resolver Batalha</button>
+        <button @click="cancelBattle" class="heroesBtn">Cancelar</button>
+      </div>
 
-        <!-- Seção de Armas -->
-        <div>
-          <label>Armas:</label>
-          <button type="button" @click="addWeapon">Adicionar Arma</button>
+      <div v-if="selectedKnight && !battleState.isBattling" class="detailsContainer">
+        <h3>Detalhes do Cavaleiro</h3>
+        <p>
+          <b>Nome:</b> {{ selectedKnight.name }} / 
+          <b>Nickname:</b> {{ selectedKnight.nickname }} /
+          <b>Idade:</b> {{ calculateAge(selectedKnight.birthday) }} /
+          <b>Atributo Chave:</b> {{ selectedKnight.keyAttribute }} /
+          <b>Herói:</b> {{ selectedKnight.isHero ? "Sim" : "Não" }}
+        </p>
+        <p>
+          <b>Armas:</b>
           <ul>
-            <li v-for="(weapon, index) in newKnight.weapons" :key="index">
-              <input v-model="weapon.name" placeholder="Nome da Arma" required />
-              <input v-model.number="weapon.mod" type="number" placeholder="Modificador" required />
-              <input v-model="weapon.attr" placeholder="Atributo da Arma" required />
-              <select v-model="weapon.equipped" required>
-                <option value="">Equiado?</option>
-                <option value="true">Sim</option>
-                <option value="false">Não</option>
-              </select>
-              <button type="button" @click="removeWeapon(index)">Remover</button>
+            <li v-for="(weapon, index) in selectedKnight.weapons" :key="index">
+              {{ weapon.name }} (Mod: {{ weapon.mod }}, Atributo: {{ weapon.attr }},Equipado: {{ weapon.equipped ? "Sim" : "Não" }})
             </li>
           </ul>
-        </div>
+        </p>
+        <p><b>Atributos:</b></p>
+        <ul>
+          <li v-for="(value, key) in selectedKnight.attributes" :key="key">
+            {{ key }}: {{ value }}
+          </li>
+        </ul>
+        <button class="closeBtn" @click="selectedKnight = null">Fechar</button>
+      </div>
 
-        <!-- Seção de Atributos -->
-        <div>
-          <label>Atributos:</label>
-          <div v-for="(value, attr) in newKnight.attributes" :key="attr">
-            <label>{{ attr }}:</label>
-            <input v-model.number="newKnight.attributes[attr]" type="number" required />
+      <div v-if="isFormVisible && !battleState.isBattling">
+        <h3 class="titleAdd">Deseja inscrever um novo mebro na taverna?</h3>
+        <form @submit.prevent="addKnight" class="formAdd">
+          <div>
+            <label for="name">Nome:</label>
+            <input id="name" v-model="newKnight.name" placeholder="Nome" required />
           </div>
-          <button type="button" @click="addAttribute">Adicionar Atributo</button>
-        </div>
+          <div>
+            <label for="nickname">Apelido:</label>
+            <input id="nickname" v-model="newKnight.nickname" placeholder="Apelido" required />
+          </div>
+          <div>
+            <label for="birthday">Data de Nascimento:</label>
+            <input id="birthday" v-model="newKnight.birthday" type="date" required />
+          </div>
+          <div>
+            <label for="keyAttribute">Atributo Chave:</label>
+            <select id="keyAttribute" v-model="newKnight.keyAttribute" required>
+              <option value="Strength">Strength</option>
+              <option value="Dexterity">Dexterity</option>
+              <option value="Intelligence">Intelligence</option>
+              <option value="Constitution">Constitution</option>
+              <option value="Wisdom">Wisdom</option>
+              <option value="Charisma">Charisma</option>
+            </select>
+          </div>
 
-      <button class="addBtn" type="submit">Registrar Cavaleiro</button>
-    </form>
+          <div>
+            <label>Armas:</label>
+            <button type="button" @click="addWeapon">Adicionar Arma</button>
+            <ul>
+              <li v-for="(weapon, index) in newKnight.weapons" :key="index">
+                <input v-model="weapon.name" placeholder="Nome da Arma" required />
+                <input v-model.number="weapon.mod" type="number" placeholder="Modificador" required />
+                <input v-model="weapon.attr" placeholder="Atributo da Arma" required />
+                <select v-model="weapon.equipped" required>
+                  <option value="">Equiado?</option>
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+                <button type="button" @click="removeWeapon(index)">Remover</button>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <label>Atributos:</label>
+            <div v-for="(value, attr) in newKnight.attributes" :key="attr">
+              <label>{{ attr }}:</label>
+              <input v-model.number="newKnight.attributes[attr]" type="number" required />
+            </div>
+            <button type="button" @click="addAttribute">Adicionar Atributo</button>
+          </div>
+
+        <button class="addBtn" type="submit">Registrar Cavaleiro</button>
+        </form>
+      </div>
   </div>
 </template>
 
@@ -131,6 +173,13 @@ export default defineComponent({
         isHero: false,
       },
       isShowingHeroes: false,
+      isFormVisible: false,
+      selectedKnight: null as Knight | null,
+      battleState: {
+        isBattling: false,
+        knight1: null as Knight | null,
+        knight2: null as Knight | null,
+      },
     };
   },
   methods: {
@@ -146,7 +195,13 @@ export default defineComponent({
       } else {
         await this.fetchHeroKnights();
       }
-      this.isShowingHeroes = !this.isShowingHeroes; // Alterna o estado
+      this.isShowingHeroes = !this.isShowingHeroes;
+    },
+    toggleForm() {
+      this.isFormVisible = !this.isFormVisible;
+    },
+    showDetails(knight: Knight) {
+      this.selectedKnight = knight;
     },
     async addKnight() {
       try {
@@ -155,6 +210,7 @@ export default defineComponent({
         this.resetForm();
         await this.fetchKnights();
       } catch (error) {
+        alert('Erro ao adicionar cavaleiro');
         console.error("Erro ao adicionar cavaleiro:", error);
       }
     },
@@ -201,6 +257,7 @@ export default defineComponent({
             this.knights[index].nickname = updatedKnight.nickname;
           }
         } catch (error) {
+          alert('Erro ao editar nickname');
           console.error('Erro ao editar nickname:', error);
         }
       }
@@ -220,6 +277,7 @@ export default defineComponent({
             this.knights[index].isHero = true;
           }
         } catch (error) {
+          alert('Erro ao promover cavaleiro');
           console.error('Erro ao deletar cavaleiro:', error);
         }
       }
@@ -235,15 +293,71 @@ export default defineComponent({
       return age;
     },
     calculateAttack(knight: Knight): number {
-      const baseAttack = 10;
-      const mod = knight.attributes[knight.keyAttribute] || 0;
-      const weaponMod =
-        knight.weapons.reduce((sum: any, weapon: { mod: any; }) => sum + weapon.mod, 0) || 0;
-      return baseAttack + mod + weaponMod;
+      const calculateAttributeModifier = (value: number): number => {
+        if (value >= 0 && value <= 8) return -2;
+        if (value >= 9 && value <= 10) return -1;
+        if (value >= 11 && value <= 12) return 0;
+        if (value >= 13 && value <= 15) return 1;
+        if (value >= 16 && value <= 18) return 2;
+        if (value >= 19 && value <= 20) return 3;
+        return 0;
+      };
+
+      const keyAttributeValue = knight.attributes[knight.keyAttribute] || 0;
+      const keyAttrModifier = calculateAttributeModifier(keyAttributeValue);
+
+      const weaponMod = knight.weapons
+        .filter((weapon) => weapon.equipped)
+        .reduce((sum, weapon) => sum + weapon.mod, 0);
+
+      return 10 + keyAttrModifier + weaponMod;
     },
     calculateExp(age: number): number {
       if (age < 7) return 0;
       return Math.floor((age - 7) * Math.pow(22, 1.45));
+    },
+    initiateBattle(knight: Knight) {
+      if(this.calculateAge(knight.birthday.toString()) < 18){
+        alert('Você não pode colocar menores de idade para lutar :(');
+        return;
+      }
+      if (this.battleState.isBattling) {
+        this.battleState.knight2 = knight;
+      } else {
+        this.battleState.knight1 = knight;
+        this.battleState.isBattling = true;
+      }
+    },
+    cancelBattle() {
+      this.battleState = {
+        isBattling: false,
+        knight1: null,
+        knight2: null,
+      };
+    },
+    async resolveBattle() {
+      const { knight1, knight2 } = this.battleState;
+
+      if (!knight1 || !knight2) {
+        alert("Selecione dois cavaleiros para a batalha!");
+        return;
+      }
+
+      const attack1 = this.calculateAttack(knight1);
+      const attack2 = this.calculateAttack(knight2);
+
+      if (attack1 > attack2) {
+        alert(`${knight1.name} venceu a batalha contra ${knight2.name}!`);
+        await this.removeKnight(knight2.id);
+      } else if (attack2 > attack1) {
+        alert(`${knight2.name} venceu a batalha contra ${knight1.name}!`);
+        await this.removeKnight(knight1.id);
+      } else {
+        alert("A batalha terminou em empate!");
+      }
+
+      this.cancelBattle();
+      this.fetchKnights();
     },
   },
   mounted() {
@@ -270,15 +384,50 @@ export default defineComponent({
     color: #fff;
   }
 
+  .tableActions {
+    display: flex;
+  }
+
+  .detailsBtn{
+    background: #3665ff !important;
+    color: #fff;
+    width: 25%;
+    margin-right: 5px;
+    font-size: 12px;
+    text-align: center;
+  }
+
   .editBtn{
     background: #f5c527;
     color: #fff;
     margin-right: 5px;
+    width: 25%;
+    font-size: 12px;
+    text-align: center;
   }
 
   .deleteBtn{
     background: #f73f3f;
     color: #fff;
+    width: 25%;
+    margin-right: 5px;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .battleBtn{
+    background: #696969;
+    color: #fff;
+    width: 25%;
+    margin-right: 5px;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .closeBtn{
+    background: #f73f3f;
+    color: #fff;
+    text-align: center;
   }
 
   .addBtn{
@@ -291,6 +440,13 @@ export default defineComponent({
     margin-top: 20px;
     color: #fff;
     background-color: #696969;
+    margin-right: 15px;
+  }
+
+  .knightAddBtn{
+    background: #6ff332 !important;
+    color: #fff;
+    margin-top: 50px;
   }
 
   .formAdd div {
@@ -328,5 +484,10 @@ export default defineComponent({
   .formAdd ul li input, .formAdd ul li select {
     margin-right: 15px;
     width: 21%;
+  }
+
+  .detailsContainer ul {
+    list-style: none;
+    padding: 0;
   }
 </style>
