@@ -138,7 +138,6 @@
               <label>{{ attr }}:</label>
               <input v-model.number="newKnight.attributes[attr]" type="number" required />
             </div>
-            <button type="button" @click="addAttribute">Adicionar Atributo</button>
           </div>
 
         <button class="addBtn" type="submit">Registrar Cavaleiro</button>
@@ -222,15 +221,6 @@ export default defineComponent({
     },
     removeWeapon(index: number) {
       this.newKnight.weapons.splice(index, 1);
-    },
-    addAttribute() {
-      const attrName = prompt("Digite o nome do atributo:");
-      if (attrName && !(attrName in this.newKnight.attributes)) {
-        this.newKnight.attributes = {
-          ...this.newKnight.attributes,
-          [attrName]: 0
-        };
-      }
     },
     resetForm() {
       this.newKnight = {
