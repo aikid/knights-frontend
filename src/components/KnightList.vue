@@ -391,7 +391,6 @@ export default defineComponent({
   .detailsBtn{
     background: #3665ff !important;
     color: #fff;
-    width: 25%;
     margin-right: 5px;
     font-size: 12px;
     text-align: center;
@@ -401,7 +400,6 @@ export default defineComponent({
     background: #f5c527;
     color: #fff;
     margin-right: 5px;
-    width: 25%;
     font-size: 12px;
     text-align: center;
   }
@@ -409,7 +407,6 @@ export default defineComponent({
   .deleteBtn{
     background: #f73f3f;
     color: #fff;
-    width: 25%;
     margin-right: 5px;
     font-size: 12px;
     text-align: center;
@@ -418,7 +415,6 @@ export default defineComponent({
   .battleBtn{
     background: #696969;
     color: #fff;
-    width: 25%;
     margin-right: 5px;
     font-size: 12px;
     text-align: center;
