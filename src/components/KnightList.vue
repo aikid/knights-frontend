@@ -287,12 +287,12 @@ export default defineComponent({
     },
     calculateAttack(knight: Knight): number {
       const calculateAttributeModifier = (value: number): number => {
-        if (value >= 0 && value <= 8) return -2;
-        if (value >= 9 && value <= 10) return -1;
-        if (value >= 11 && value <= 12) return 0;
-        if (value >= 13 && value <= 15) return 1;
-        if (value >= 16 && value <= 18) return 2;
-        if (value >= 19 && value <= 20) return 3;
+        if (value < 0) return 0;
+        const ranges = [8, 10, 12, 15, 18, 20];
+        const mods = [-2, -1, 0, 1, 2, 3];
+        for (let i = 0; i < ranges.length; i++) {
+          if (value <= ranges[i]) return mods[i];
+        }
         return 0;
       };
 
